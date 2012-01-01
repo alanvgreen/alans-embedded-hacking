@@ -1,1 +1,7 @@
 Release
+Debug
+*.o
+*.mk
+*.elf
+*.lss
+*.map
