@@ -190,7 +190,6 @@ void display_line(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1) {
             error += deltax;
         }
     }
-
 }
 
 // An implementation of the midpoint circle algorithm
@@ -258,7 +257,7 @@ void demo_pixel_set() {
     _delay_ms(1000);
 }
 
-// Draw lines with line drawing algorithm
+// Demo lines to make a moving Qix thing
 void demo_lines() {
     int const num = 8;
     int x0s[num], y0s[num], x1s[num], y1s[num];
@@ -272,6 +271,7 @@ void demo_lines() {
         y1s[t] = 1;
     }
 
+    // Move the lines aound
     for (int t = 0; t < 250; t++) {
         display_clear();
         // draw each line
@@ -320,7 +320,6 @@ int main(int argc, char **argv) {
     spi_init();
     _delay_ms(20);
     lcd_reset();
-
 
     while (1) {
         lcd_reset();
