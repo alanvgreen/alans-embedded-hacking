@@ -29,6 +29,7 @@
 #include <avr/pgmspace.h>
 #include <inttypes.h>
 #include <stdbool.h>
+#include <stdlib.h>
 #include <string.h>
 #include <util/delay.h>
 
@@ -76,7 +77,7 @@ void lcd_set_cursor(uint8_t line, uint8_t col) {
     lcd_instruction(d);
 }
 
-// Clears the screen
+// Clears the text screen
 void lcd_clear() {
     lcd_instruction(0b00000001); // clear
     _delay_ms(2); // Needs 1.62ms delay
@@ -84,7 +85,6 @@ void lcd_clear() {
 
 // Reset, as per page 34 of 7920 data sheet
 void lcd_reset() {
-
     // Bring (PB0) low, then high
     PORTB &= ~0x01;
     _delay_ms(1);
@@ -109,65 +109,170 @@ void lcd_send_str_p(PGM_P p) {
     }
 }
 
+//
+// Half the 328P's RAM
+// Lay out is 64 Rows of 16 Bytes
 static uint8_t display[1024];
 
-void lcd_refresh() {
+//
+// Call this to paint the display ram onto the display
+// Display will then be in graphics mode. Call lcd_reset() to go back to text mode
+void display_refresh() {
     // Initialize graphics mode
     lcd_instruction(0b00110100); // 8bit data, extended instructions
     lcd_instruction(0b00110110); // +graphics
 
-//    lcd_instruction(0b10000000); // to start of ram
-//    lcd_instruction(0b10000000); // to start of ram
-
     uint8_t *p = display;
     for (int row = 0; row < 64; row++) {
-        lcd_instruction(0b10000000 | (row & 0x1f)); // to start of row
+        // To Start of Row
+        lcd_instruction(0b10000000 | (row & 0x1f));
         lcd_instruction(row < 32 ? 0b10000000 : 0b10001000);
-        // Iterate over row
-        for (int j = 0 ; j < 16; j++) {
+        // Iterate over bytes
+        for (int j = 0; j < 16; j++) {
             lcd_data(*p);
             p++;
         }
     }
-
-//    lcd_instruction(0b00110100); // -graphics
-//    lcd_instruction(0b00100100); // 8bit data, basic instructions
 }
 
+//
+// Clear display to empty
 void display_clear() {
     memset(display, 0, 1024);
 }
 
-int main(int argc, char **argv) {
+//
+// Set a bit on the display
+// 0 <= x < 64, 0 <= y < 128
+void display_set(uint8_t x, uint8_t y) {
+    uint8_t *addr = display + (y * 16) + ((x & 0x78) >> 3);
+    *addr = (*addr) | (0x80 >> (x & 7));
+}
 
+//
+// Draw a line with Bresenhan's algorithm
+// http://en.wikipedia.org/wiki/Bresenham's_line_algorithm
+void display_line(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1) {
+    bool steep = abs(y1 - y0) > abs(x1 - x0);
+#define swap(a, b) {uint8_t c = a; a = b; b = c;}
+    if (steep) {
+        swap(x0, y0);
+        swap(x1, y1);
+    }
+    if (x0 > x1) {
+        swap(x0, x1);
+        swap(y0, y1);
+    }
+#undef swap
+    int deltax = x1 - x0;
+    int deltay = abs(y1 - y0);
+    int error = deltax >> 1; // deltax/2
+    int8_t ystep = (y0 < y1) ? 1 : -1;
+    uint8_t y = y0;
+    for (uint8_t x = x0; x != x1; x++) {
+        if (steep) {
+            display_set(y, x);
+        } else {
+            display_set(x, y);
+        }
+        error = error - deltay;
+        if (error < 0) {
+            y += ystep;
+            error += deltax;
+        }
+    }
+
+}
+
+// Checker board made by direct manipulation of display ram
+void demo_checker_board() {
+    // Checker board
+    display_clear();
+    for (int i = 0; i < 64; i++) {
+        for (int j = 0; j < 16; j++) {
+            display[i * 16 + j] = (i & 4) ? 0xf0 : 0x0f;
+        }
+    }
+
+    display_refresh();
+}
+
+// diagonal line down and up
+void demo_pixel_set() {
+    // Lines with line algorithm
+    // diagonal line down and up
+    display_clear();
+    for (int x = 0; x < 128; x++) {
+        if (x < 64) {
+            display_set(x, x);
+        } else {
+            display_set(x, 127 - x);
+        }
+    }
+
+    display_refresh();
+}
+
+// Draw lines with line drawing algorithm
+void demo_lines() {
+    int const num = 8;
+    int x0s[num], y0s[num], x1s[num], y1s[num];
+    int dx0 = -2, dx1 = 3, dy0 = 3, dy1 = 2;
+
+    // init
+    for (int t = 0; t < num ; t++) {
+        x0s[t] = 33;
+        x1s[t] = 58;
+        y0s[t] = 0;
+        y1s[t] = 1;
+    }
+
+    for (int t = 0; t < 500; t++) {
+        display_clear();
+        // draw each line
+        for (uint8_t j = 0; j < num; j++) {
+            display_line(x0s[j], y0s[j], x1s[j], y1s[j]);
+        }
+
+        // move them down
+        for (uint8_t j = num - 1; j >= 1; j--) {
+            x0s[j] = x0s[j - 1];
+            x1s[j] = x1s[j - 1];
+            y0s[j] = y0s[j - 1];
+            y1s[j] = y1s[j - 1];
+        }
+
+        // calculate next
+        x0s[0] += dx0;
+        x1s[0] += dx1;
+        y0s[0] += dy0;
+        y1s[0] += dy1;
+#define limit(v, dv, max_v) {\
+        if (v < 0) { v = 0; dv = (rand() & 3) + 2; } \
+        if (v >= max_v) { v = max_v - 1; dv = -(rand() & 3) - 2; } \
+}
+        limit(x0s[0], dx0, 128);
+        limit(x1s[0], dx1, 128);
+        limit(y0s[0], dy0, 64);
+        limit(y1s[0], dy1, 64);
+#undef limit
+        display_refresh();
+    }
+}
+
+int main(int argc, char **argv) {
     spi_init();
     _delay_ms(10);
     lcd_reset();
 
     while (1) {
-        display_clear();
-        for (int i = 0; i < 64; i++) {
-            for (int j = 0; j < 16; j++) {
-                display[i * 16 + j] = (i & 4) ? 0xf0 : 0x0f;
-            }
-        }
-        lcd_refresh();
+        demo_lines();
 
-        _delay_ms(100);
-//        lcd_instruction(0x80);
-//        for (uint8_t c = 0; c < 64; c++) {
-//            lcd_data('1' + (c >> 4));
-//        }
-//
-//        _delay_ms(1000);
-//        lcd_clear();
-//
-//        lcd_instruction(0x80);
-//        for (uint8_t c = 0; c < 64; c++) {
-//            lcd_data('A' + (c >> 4));
-//        }
-//        _delay_ms(1000);
-//        lcd_clear();
+        demo_pixel_set();
+        _delay_ms(1000);
+
+        demo_checker_board();
+        _delay_ms(1000);
     }
 }
 
