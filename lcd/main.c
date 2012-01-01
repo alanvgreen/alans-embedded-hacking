@@ -143,10 +143,19 @@ void display_clear() {
 
 //
 // Set a bit on the display
-// 0 <= x < 64, 0 <= y < 128
+// 0 <= x < 128, 0 <= y < 64
 void display_set(uint8_t x, uint8_t y) {
     uint8_t *addr = display + (y * 16) + ((x & 0x78) >> 3);
     *addr = (*addr) | (0x80 >> (x & 7));
+}
+
+//
+// A version of display_set that checks bounds
+void display_set_check(int x, int y) {
+    if (x < 0 || x >= 128 || y < 0 || y >= 64) {
+        return;
+    }
+    display_set(x, y);
 }
 
 //
@@ -184,6 +193,40 @@ void display_line(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1) {
 
 }
 
+// An implementation of the midpoint circle algorithm
+// http://en.wikipedia.org/wiki/Midpoint_circle_algorithm
+// 'cx' and 'cy' denote the offset of the circle centre from the origin.
+void _plot4points(int cx, int cy, int x, int y) {
+    display_set_check(cx + x, cy + y);
+    display_set_check(cx - x, cy + y);
+    display_set_check(cx + x, cy - y);
+    display_set_check(cx - x, cy - y);
+}
+
+void _plot8points(int cx, int cy, int x, int y) {
+    _plot4points(cx, cy, x, y);
+    _plot4points(cx, cy, y, x);
+}
+
+void display_circle(uint8_t cx, uint8_t cy, uint8_t radius) {
+    int error = -radius;
+    int x = radius;
+    int y = 0;
+
+    while (x > y) {
+        _plot8points(cx, cy, x, y);
+        error += y;
+        ++y;
+        error += y;
+        if (error >= 0) {
+            error -= x;
+            --x;
+            error -= x;
+        }
+    }
+    _plot4points(cx, cy, x, y);
+}
+
 // Checker board made by direct manipulation of display ram
 void demo_checker_board() {
     // Checker board
@@ -195,6 +238,7 @@ void demo_checker_board() {
     }
 
     display_refresh();
+    _delay_ms(1000);
 }
 
 // diagonal line down and up
@@ -211,6 +255,7 @@ void demo_pixel_set() {
     }
 
     display_refresh();
+    _delay_ms(1000);
 }
 
 // Draw lines with line drawing algorithm
@@ -220,14 +265,14 @@ void demo_lines() {
     int dx0 = -2, dx1 = 3, dy0 = 3, dy1 = 2;
 
     // init
-    for (int t = 0; t < num ; t++) {
+    for (int t = 0; t < num; t++) {
         x0s[t] = 33;
         x1s[t] = 58;
         y0s[t] = 0;
         y1s[t] = 1;
     }
 
-    for (int t = 0; t < 500; t++) {
+    for (int t = 0; t < 250; t++) {
         display_clear();
         // draw each line
         for (uint8_t j = 0; j < num; j++) {
@@ -260,19 +305,35 @@ void demo_lines() {
     }
 }
 
+void demo_circles() {
+    for (int i = 0; i < 100; i += 2) {
+        display_clear();
+        for (int j = 0; j < 6; j++) {
+            display_circle(64 + (i - 50) / 6 - j * (i - 50) / 10, 32 + j,
+                    j * 12 + 5);
+        }
+        display_refresh();
+    }
+}
+
 int main(int argc, char **argv) {
     spi_init();
-    _delay_ms(10);
+    _delay_ms(20);
     lcd_reset();
 
+
     while (1) {
+        lcd_reset();
+        _delay_ms(10);
+        lcd_set_cursor(1, 1);
+        lcd_send_str_p(string_1);
+        _delay_ms(3000);
+        lcd_clear();
+
+        demo_circles();
         demo_lines();
-
         demo_pixel_set();
-        _delay_ms(1000);
-
         demo_checker_board();
-        _delay_ms(1000);
     }
 }
 
