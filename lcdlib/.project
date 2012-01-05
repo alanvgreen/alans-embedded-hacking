@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>lcd</name>
+	<name>lcdlib</name>
 	<comment></comment>
 	<projects>
-		<project>lcdlib</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>
@@ -32,7 +31,7 @@
 				</dictionary>
 				<dictionary>
 					<key>org.eclipse.cdt.make.core.buildLocation</key>
-					<value>${workspace_loc:/lcd/Release}</value>
+					<value>${workspace_loc:/lcdlib/Debug}</value>
 				</dictionary>
 				<dictionary>
 					<key>org.eclipse.cdt.make.core.cleanBuildTarget</key>
