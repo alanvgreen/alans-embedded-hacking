@@ -4,7 +4,10 @@
  *  Created on: 05/01/2012
  *      Author: Alan Green
  *
- * LCD Library functions
+ * LCD Library graphics functions.
+ *
+ * This file defines the 1K byte graphics RAM. It is the only file in
+ * this library which references that RAM block.
  */
 
 #include <avr/io.h>
@@ -16,80 +19,6 @@
 #include <util/delay.h>
 
 #include "lcd.h"
-
-void spi_init(void) {
-    // SPI enable, master mode, clock idle high, sample data on trailing edge
-    // Clock Frequency = Fosc / 2 = 8MHz
-    SPCR = 0b01011100;
-    SPSR = 0b00000001;
-
-    // Set SS, MISO and PB0 as outputs
-    DDRB = 0xff;
-    PORTB = 0x1; // set PB0 - nonreset
-}
-
-void spi_send(uint8_t b) {
-    SPDR = b;
-    while (!(SPSR & 0x80)) {
-        // busy wait
-    }
-}
-
-void lcd_instruction(uint8_t ins) {
-    spi_send(0b11111000); // 5 1 bits, RS = 0, RW = 0
-    spi_send(ins & 0xf0);
-    spi_send(ins << 4);
-    _delay_us(72);
-}
-
-void lcd_data(uint8_t data) {
-    spi_send(0b11111010); // 5 1 bits, RS = 1, RW = 0
-    spi_send(data & 0xf0);
-    spi_send(data << 4);
-    _delay_us(40);
-}
-
-void lcd_set_cursor(uint8_t line, uint8_t col) {
-    // Contrary to the data sheet, the starting addresses for lines 0, 1, 2 and 3 are 80, 90, 88 and 98
-    uint8_t d = 0x80 + col;
-    if (line & 1) {
-        d |= 0x10;
-    }
-    if (line & 2) {
-        d |= 0x8;
-    }
-    lcd_instruction(d);
-}
-
-// Clears the text screen
-void lcd_clear() {
-    lcd_instruction(0b00000001); // clear
-    _delay_ms(2); // Needs 1.62ms delay
-}
-
-// Reset, as per page 34 of 7920 data sheet
-void lcd_reset() {
-    // Bring (PB0) low, then high
-    PORTB &= ~0x01;
-    _delay_ms(1);
-    PORTB |= 0x01;
-    _delay_ms(10);
-
-    lcd_instruction(0b00110000); // 8 bit data, basic instructions
-    lcd_instruction(0b00110000); // 8 bit data, basic instructions
-
-    lcd_instruction(0b00001100); // d_buffer on
-    lcd_clear();
-    lcd_instruction(0b00000110); // increment, no shift
-}
-
-void lcd_send_str_p(PGM_P p) {
-    uint8_t b;
-    while (b = pgm_read_byte(p), b) {
-        lcd_data(b);
-        p++;
-    }
-}
 
 //
 // Half the 328P's RAM
@@ -207,6 +136,4 @@ void display_circle(uint8_t cx, uint8_t cy, uint8_t radius) {
     }
     _plot4points(cx, cy, x, y);
 }
-
-
 
