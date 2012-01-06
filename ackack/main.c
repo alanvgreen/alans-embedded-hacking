@@ -49,23 +49,32 @@ static void lcd_print_line(uint8_t line, PGM_P fmt, ...) {
     }
 }
 
-static uint8_t dirs[16];
-
 void add_dir(uint8_t ch) {
-    static uint8_t idx = 0;
+    static uint8_t idx = 16;
     static uint8_t last = 0;
+    static uint8_t dirs[16];
 
+    // ignore dupes
     if (ch == last) {
         return;
     }
     last = ch;
 
+    // no action on button up
+    if (ch == 0) {
+        return;
+    }
+
+    // if reached end of line, clear before adding a new char
     if (idx >= 16) {
         memset(dirs, ' ', 16);
         idx = 0;
     }
 
+    // Add new char
     dirs[idx++] = ch;
+
+    // output the collected buffer
     lcd_set_cursor(1, 0);
     for (int i = 0; i < 16; i++) {
         lcd_data(dirs[i]);
@@ -105,7 +114,9 @@ int main() {
         } else if (an4 > 670 && an4 < 690) {
             add_dir(0x1a); // right
         } else if (an4 > 755 && an4 < 775) {
-            add_dir(0x18);
+            add_dir(0x18); // up
+        } else {
+            add_dir(0);
         }
 
         lcd_print_line(2, PSTR("Knock:  %4d"), an5);
