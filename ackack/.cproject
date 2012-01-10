@@ -108,6 +108,7 @@
 								<option id="de.innot.avreclipse.compiler.option.optimize.258221605" name="Optimization Level" superClass="de.innot.avreclipse.compiler.option.optimize" value="de.innot.avreclipse.compiler.optimize.size" valueType="enumerated"/>
 								<option id="de.innot.avreclipse.compiler.option.incpath.749393858" name="Include Paths (-I)" superClass="de.innot.avreclipse.compiler.option.incpath" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/lcdlib}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/Arduino10}&quot;"/>
 								</option>
 								<inputType id="de.innot.avreclipse.compiler.winavr.input.1899898319" name="C Source Files" superClass="de.innot.avreclipse.compiler.winavr.input"/>
 							</tool>
@@ -116,6 +117,7 @@
 								<option id="de.innot.avreclipse.cppcompiler.option.optimize.608209649" name="Optimization Level" superClass="de.innot.avreclipse.cppcompiler.option.optimize" value="de.innot.avreclipse.cppcompiler.optimize.size" valueType="enumerated"/>
 								<option id="de.innot.avreclipse.cppcompiler.option.incpath.157998158" name="Include Paths (-I)" superClass="de.innot.avreclipse.cppcompiler.option.incpath" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/lcdlib}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/Arduino10}&quot;"/>
 								</option>
 								<inputType id="de.innot.avreclipse.cppcompiler.input.2109866073" superClass="de.innot.avreclipse.cppcompiler.input"/>
 							</tool>
@@ -123,9 +125,11 @@
 							<tool id="de.innot.avreclipse.tool.cpplinker.app.release.164772342" name="AVR C++ Linker" superClass="de.innot.avreclipse.tool.cpplinker.app.release">
 								<option id="de.innot.avreclipse.cpplinker.option.libs.1417718385" name="Libraries (-l)" superClass="de.innot.avreclipse.cpplinker.option.libs" valueType="libs">
 									<listOptionValue builtIn="false" value="lcdlib"/>
+									<listOptionValue builtIn="false" value="Arduino10"/>
 								</option>
 								<option id="de.innot.avreclipse.cpplinker.option.libpath.578091042" name="Libraries Path (-L)" superClass="de.innot.avreclipse.cpplinker.option.libpath" valueType="stringList">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/lcdlib/Release}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/Arduino10/Release}&quot;"/>
 								</option>
 								<inputType id="de.innot.avreclipse.tool.cpplinker.input.1574865943" name="OBJ Files" superClass="de.innot.avreclipse.tool.cpplinker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>

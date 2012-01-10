@@ -3,6 +3,7 @@
 	<name>ackack</name>
 	<comment></comment>
 	<projects>
+		<project>Arduino10</project>
 		<project>lcdlib</project>
 	</projects>
 	<buildSpec>
